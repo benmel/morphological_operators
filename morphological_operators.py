@@ -13,19 +13,19 @@ class MorphologicalOperators:
 		self.rows,self.cols = self.labeled_image.shape()
 	
 	def erosion(self, se):
-		# erosion operation
+		print "erosion operation"
 
 	def dilation(self, se):
-		# dilation operation
+		print "dilation operation"
 
 	def opening(self, se):
-		# opening operation
+		print "opening operation"
 
 	def closing(self, se):
-		# closing operation
+		print "closing operation"
 
 	def boundary(self):
-		# boundary operation						
+		print "boundary operation"						
 
 	def plot(self):
 		self.labeled_image.plot()
@@ -112,7 +112,7 @@ class Pixel:
 						
 def main():
 	def usage():
-		print 'morphological_operators.py -i <input_file> [-o <output_file>]'
+		print 'python morphological_operators.py -i <input_file> [-o <output_file>]'
 
 	input_file = None
 	output_file = None
