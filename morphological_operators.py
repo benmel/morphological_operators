@@ -3,6 +3,7 @@ import getopt
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+from copy import deepcopy
 
 class MorphologicalOperators:
 	def __init__(self, img, arr):
@@ -10,35 +11,36 @@ class MorphologicalOperators:
 		ret,thresh = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
 		self.background = 0
 		self.foreground = 255
-		self.original_image = LabeledImage(thresh, None, None, self.background)
-		self.rows,self.cols = self.original_image.shape()
+		self.labeled_image = LabeledImage(thresh, None, None, self.background)
+		self.rows,self.cols = self.labeled_image.shape()
 		self.new_image = LabeledImage(None, self.rows, self.cols, self.background)
 		self.se = StructuringElement(arr)
 	
 	def erosion(self):
 		for i in xrange(self.rows):
 			for j in xrange(self.cols):
-				current = self.original_image.get_pixel(i,j)
+				current = self.labeled_image.get_pixel(i,j)
 				new = Pixel(current.label, current.row, current.col)
 				if (current.is_not_label(self.background)):
 					coords = self.se.get_coords(current.row, current.col)
-					neighbors = self.original_image.get_pixels(coords)
+					neighbors = self.labeled_image.get_pixels(coords)
 					other_bg_px = False
 					for n in neighbors:
 						if n.is_label(self.background):
 							other_bg_px = True
 					if other_bg_px and len(neighbors) > 0:
 						new.label = self.background
-				self.new_image.label_pixel(new)
+				self.new_image.label_pixel(new)		
+		self.labeled_image = deepcopy(self.new_image)		
 
 	def dilation(self):
 		for i in xrange(self.rows):
 			for j in xrange(self.cols):
-				current = self.original_image.get_pixel(i,j)
+				current = self.labeled_image.get_pixel(i,j)
 				new = Pixel(current.label, current.row, current.col)
 				if (current.is_label(self.background)):
 					coords = self.se.get_coords(current.row, current.col)
-					neighbors = self.original_image.get_pixels(coords)
+					neighbors = self.labeled_image.get_pixels(coords)
 					other_fg_px = False
 					for n in neighbors:
 						if n.is_not_label(self.background):
@@ -46,9 +48,11 @@ class MorphologicalOperators:
 					if other_fg_px and len(neighbors) > 0:
 						new.label = self.foreground
 				self.new_image.label_pixel(new)
+		self.labeled_image = deepcopy(self.new_image)	
 
 	def opening(self):
-		print "opening operation"
+		self.erosion()
+		self.dilation()
 
 	def closing(self):
 		print "closing operation"
@@ -57,13 +61,13 @@ class MorphologicalOperators:
 		print "boundary operation"						
 
 	def plot(self):
-		self.new_image.plot()
+		self.labeled_image.plot()
 
 	def save(self, output_file):
-		self.new_image.save(output_file)	
+		self.labeled_image.save(output_file)	
 
 	def save_text(self):
-		np.savetxt('in.csv', self.original_image.matrix, delimiter=',', fmt='%d')
+		np.savetxt('in.csv', self.labeled_image.matrix, delimiter=',', fmt='%d')
 		np.savetxt('out.csv', self.new_image.matrix, delimiter=',', fmt='%d')	
 	
 
@@ -186,8 +190,9 @@ def main():
 
 	img = cv2.imread(input_file,0)
 	arr = [[1,1,1],[1,1,1],[1,1,1]]
+	# arr = [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]]
 	mo = MorphologicalOperators(img, arr)
-	mo.dilation()
+	mo.opening()
 	
 	if output_file:
 		mo.save(output_file)
