@@ -51,7 +51,6 @@ class MorphologicalOperators:
 		self.labeled_image = deepcopy(self.new_image)	
 
 	def opening(self):
-		# erosion, then dilation
 		self.erosion()
 		self.dilation()
 
@@ -191,8 +190,9 @@ def main():
 
 	img = cv2.imread(input_file,0)
 	arr = [[1,1,1],[1,1,1],[1,1,1]]
+	# arr = [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]]
 	mo = MorphologicalOperators(img, arr)
-	mo.dilation()
+	mo.opening()
 	
 	if output_file:
 		mo.save(output_file)
