@@ -9,6 +9,7 @@ class MorphologicalOperators:
 		"""Create threshold image"""
 		ret,thresh = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
 		self.background = 0
+		self.foreground = 255
 		self.original_image = LabeledImage(thresh, None, None, self.background)
 		self.rows,self.cols = self.original_image.shape()
 		self.new_image = LabeledImage(None, self.rows, self.cols, self.background)
@@ -31,7 +32,20 @@ class MorphologicalOperators:
 				self.new_image.label_pixel(new)
 
 	def dilation(self):
-		print "dilation operation"
+		for i in xrange(self.rows):
+			for j in xrange(self.cols):
+				current = self.original_image.get_pixel(i,j)
+				new = Pixel(current.label, current.row, current.col)
+				if (current.is_label(self.background)):
+					coords = self.se.get_coords(current.row, current.col)
+					neighbors = self.original_image.get_pixels(coords)
+					other_fg_px = False
+					for n in neighbors:
+						if n.is_not_label(self.background):
+							other_fg_px = True
+					if other_fg_px and len(neighbors) > 0:
+						new.label = self.foreground
+				self.new_image.label_pixel(new)
 
 	def opening(self):
 		print "opening operation"
@@ -173,7 +187,7 @@ def main():
 	img = cv2.imread(input_file,0)
 	arr = [[1,1,1],[1,1,1],[1,1,1]]
 	mo = MorphologicalOperators(img, arr)
-	mo.erosion()
+	mo.dilation()
 	
 	if output_file:
 		mo.save(output_file)
