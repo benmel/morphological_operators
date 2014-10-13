@@ -5,39 +5,61 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 class MorphologicalOperators:
-	def __init__(self, img):
+	def __init__(self, img, arr):
 		"""Create threshold image"""
 		ret,thresh = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
 		self.background = 0
-		self.labeled_image = LabeledImage(thresh, self.background)
-		self.rows,self.cols = self.labeled_image.shape()
+		self.original_image = LabeledImage(thresh, None, None, self.background)
+		self.rows,self.cols = self.original_image.shape()
+		self.new_image = LabeledImage(None, self.rows, self.cols, self.background)
+		self.se = StructuringElement(arr)
 	
-	def erosion(self, se):
-		print "erosion operation"
+	def erosion(self):
+		for i in xrange(self.rows):
+			for j in xrange(self.cols):
+				current = self.original_image.get_pixel(i,j)
+				new = Pixel(current.label, current.row, current.col)
+				if (current.is_not_label(self.background)):
+					coords = self.se.get_coords(current.row, current.col)
+					neighbors = self.original_image.get_pixels(coords)
+					other_bg_px = False
+					for n in neighbors:
+						if n.is_label(self.background):
+							other_bg_px = True
+					if other_bg_px and len(neighbors) > 0:
+						new.label = self.background
+				self.new_image.label_pixel(new)
 
-	def dilation(self, se):
+	def dilation(self):
 		print "dilation operation"
 
-	def opening(self, se):
+	def opening(self):
 		print "opening operation"
 
-	def closing(self, se):
+	def closing(self):
 		print "closing operation"
 
 	def boundary(self):
 		print "boundary operation"						
 
 	def plot(self):
-		self.labeled_image.plot()
+		self.new_image.plot()
 
 	def save(self, output_file):
-		self.labeled_image.save(output_file)	
+		self.new_image.save(output_file)	
+
+	def save_text(self):
+		np.savetxt('in.csv', self.original_image.matrix, delimiter=',', fmt='%d')
+		np.savetxt('out.csv', self.new_image.matrix, delimiter=',', fmt='%d')	
 	
 
 class LabeledImage:
-	def __init__(self, matrix, background):
+	def __init__(self, matrix, rows, cols, background):
 		"""Store matrix"""
-		self.matrix = matrix
+		if matrix is None: 
+			self.matrix = np.zeros((rows,cols), dtype=np.int)
+		else:	
+			self.matrix = matrix
 		self.background = background
 
 	def shape(self):
@@ -47,36 +69,20 @@ class LabeledImage:
 		"""Return a specific pixel"""
 		return Pixel(self.matrix.item(row,col), row, col)
 
+	def get_pixels(self, coords):
+		pixels = []
+		row_max, col_max = self.shape()
+		for c in coords:
+			row_temp = c[0]
+			col_temp = c[1]
+			if row_temp >= 0 and col_temp >= 0 and row_temp < row_max and col_temp < col_max:
+				px = self.get_pixel(row_temp,col_temp)
+				pixels.append(px)
+		return pixels		
+
 	def label_pixel(self, pixel):
 		"""Label a specific pixel"""
 		self.matrix.itemset((pixel.row,pixel.col), pixel.label)
-
-	def get_neighbors(self, row, col):
-		"""Return left and upper pixel"""
-		if row <= 0:
-			left = Pixel(self.background)
-		else:
-			left = self.get_pixel(row,col-1)
-		if col <= 0:
-			upper = Pixel(self.background)
-		else:
-			upper = self.get_pixel(row-1,col)
-		return (left, upper)
-
-	def get_surrounding(self, row, col):
-		"""Return eight surrounding pixels"""
-		locations = [[row+1,col],[row+1,col-1],[row+1,col+1],
-								 [row-1,col],[row-1,col-1],[row-1,col+1],
-								 [row,col-1],[row,col+1]]
-		surr = []
-		for loc in locations:
-			row_temp = loc[0]
-			col_temp = loc[1]
-			row_max,col_max = self.shape()
-			if row_temp >= 0 and col_temp >= 0 and row_temp < row_max and col_temp < col_max:
-				px = self.get_pixel(row_temp,col_temp)
-				surr.append(px)
-		return surr		
 
 	def plot(self):
 		plt.imshow(self.matrix, interpolation = 'nearest')
@@ -109,6 +115,32 @@ class Pixel:
 			return True
 		else:
 			return False
+
+
+class StructuringElement:
+	def __init__(self, arr):
+		self.matrix = np.asmatrix(arr)
+		# test dimensions -> odd
+		self.rows,self.cols = self.matrix.shape
+		self.origin = Pixel(None, self.rows/2, self.cols/2)
+
+	def get_coords(self, row, col):
+		coords = []
+		for i in xrange(self.rows):
+			for j in xrange(self.cols):
+				current = self.get_pixel(i,j)
+				if current.label != 0:
+					row_dist = current.row - self.origin.row
+					col_dist = current.col - self.origin.col
+					new_row = row + row_dist
+					new_col = col + col_dist
+					if not(row_dist == 0 and col_dist == 0):
+						coords.append([new_row,new_col])
+		return coords
+
+	def get_pixel(self, row, col):
+		"""Return a specific pixel"""
+		return Pixel(self.matrix.item(row,col), row, col)				
 						
 def main():
 	def usage():
@@ -137,7 +169,9 @@ def main():
 		sys.exit()
 
 	img = cv2.imread(input_file,0)
-	mo = MorphologicalOperators(img)
+	arr = [[1,1,1],[1,1,1],[1,1,1]]
+	mo = MorphologicalOperators(img, arr)
+	mo.erosion()
 	
 	if output_file:
 		mo.save(output_file)
