@@ -120,8 +120,10 @@ class Pixel:
 class StructuringElement:
 	def __init__(self, arr):
 		self.matrix = np.asmatrix(arr)
-		# test dimensions -> odd
 		self.rows,self.cols = self.matrix.shape
+		if (self.rows % 2 == 0) or (self.cols % 2 == 0):
+			print 'Dimensions of structuring element must be odd'
+			sys.exit()
 		self.origin = Pixel(None, self.rows/2, self.cols/2)
 
 	def get_coords(self, row, col):
