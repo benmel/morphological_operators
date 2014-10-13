@@ -55,7 +55,8 @@ class MorphologicalOperators:
 		self.dilation()
 
 	def closing(self):
-		print "closing operation"
+		self.dilation()
+		self.erosion()
 
 	def boundary(self):
 		print "boundary operation"						
@@ -192,7 +193,7 @@ def main():
 	arr = [[1,1,1],[1,1,1],[1,1,1]]
 	# arr = [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]]
 	mo = MorphologicalOperators(img, arr)
-	mo.opening()
+	mo.closing()
 	
 	if output_file:
 		mo.save(output_file)
