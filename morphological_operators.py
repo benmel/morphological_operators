@@ -163,7 +163,7 @@ class StructuringElement:
 		self.origin = Pixel(None, self.rows/2, self.cols/2)
 
 	def get_coords(self, row, col):
-		""""Get coordinates of surrounding pixel relative to origin"""
+		""""Get coordinates of surrounding pixels relative to origin"""
 		coords = []
 		for i in xrange(self.rows):
 			for j in xrange(self.cols):
