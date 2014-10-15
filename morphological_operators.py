@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from copy import deepcopy
 
 class MorphologicalOperators:
-	def __init__(self, img, arr):
+	def __init__(self, img, se):
 		"""Create threshold image"""
 		self.background = 0
 		self.foreground = 1
@@ -14,7 +14,7 @@ class MorphologicalOperators:
 		self.original_image = LabeledImage(thresh, None, None, self.background)
 		self.labeled_image = LabeledImage(thresh, None, None, self.background)
 		self.rows,self.cols = self.labeled_image.shape()
-		self.se = StructuringElement(arr)
+		self.se = StructuringElement(se)
 	
 	def erosion(self):
 		new_image = LabeledImage(None, self.rows, self.cols, self.background)
@@ -141,8 +141,8 @@ class Pixel:
 
 
 class StructuringElement:
-	def __init__(self, arr):
-		self.matrix = np.asmatrix(arr)
+	def __init__(self, se):
+		self.matrix = se
 		self.rows,self.cols = self.matrix.shape
 		if (self.rows % 2 == 0) or (self.cols % 2 == 0):
 			print 'Dimensions of structuring element must be odd'
@@ -169,47 +169,61 @@ class StructuringElement:
 						
 def main():
 	def usage():
-		print 'python morphological_operators.py -i <input_file> [-o <output_file>]'
+		print 'python morphological_operators.py -m <morph_op> -s <se> -i <inputf> [-o <outputf>]'
 
-	input_file = None
-	output_file = None
+	morph_op = None
+	se_in = None
+	inputf = None
+	outputf = None
 
 	"""Process command line inputs"""
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "hi:o:", ["help", "input=", "output="])
+		opts, args = getopt.getopt(sys.argv[1:], "hm:s:i:o:", ["help", "morph_op=", "se=", 
+								 "inputf=", "outputf="])
 	except getopt.GetoptError:
 		usage()
 		sys.exit(2)
 	for opt, arg in opts:
 		if opt in ('-h', '--help'):
 			usage()
-			sys.exit()	
-		elif opt in ("-i", "--input"):
-			input_file = arg
-		elif opt in ("-o", "--output"):
-			output_file = arg
+			sys.exit()
+		elif opt in ("-m", "--morph_op"):
+			morph_op = arg
+		elif opt in ("-s", "--se"):
+			se_in = arg		
+		elif opt in ("-i", "--inputf"):
+			inputf = arg
+		elif opt in ("-o", "--outputf"):
+			outputf = arg
 
-	if not input_file:
+	if not morph_op or not se_in or not inputf:
 		usage()
 		sys.exit()
 
-	img = cv2.imread(input_file,0)
-	# arr = [[1,1,1],[1,1,1],[1,1,1]]
-	# arr = [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]]
-	# arr = [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]]
-	# arr = [[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	# 			 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	# 			 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	# 			 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	# 			 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	# 			 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	# 			 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	# 			 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	# 			 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	# 			 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	# 			 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	# 			 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	# 			 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]]
+	if morph_op not in ("erosion", "dilation", "opening", "closing", "boundary"):
+		print 'Available morphological operators are erosion, dilation, opening, closing '\
+					'amd boundary'
+		sys.exit()				
+
+	if se_in == 'rect3x3':
+		se = np.ones((3,3), dtype=np.int)		 		
+	elif se_in == 'rect5x5':
+		se = np.ones((5,5), dtype=np.int)		 		
+	elif se_in == 'rect7x7':
+		se = np.ones((7,7), dtype=np.int)
+	elif se_in == 'rect9x9':
+		se = np.ones((9,9), dtype=np.int)
+	elif se_in == 'rect11x11':
+		se = np.ones((11,11), dtype=np.int)
+	elif se_in == 'rect13x13':
+		se = np.ones((13,13), dtype=np.int)	
+	else:
+		print 'Available structuring elements are rect3x3, rect5x5, rect7x7, rect9x9, '\
+					'rect11x11, rect13x13'
+		sys.exit()			 					 		
+
+	
+
 	
 	# good for palm
 	# arr = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -269,15 +283,9 @@ def main():
 	# 			[0,0,0,0,0,1,1,1,1,1,1,0,0],
 	# 			[0,0,0,0,0,0,1,1,1,1,1,1,0]]
 	
-	arr = [[1,1,1],
-				 [1,1,1],
-				 [1,1,1]]
+	
 
-	# arr = [[1,1,1,1,1],
-	# 			 [1,1,1,1,1],
-	# 			 [1,1,1,1,1],
-	# 			 [1,1,1,1,1],
-	# 			 [1,1,1,1,1]]
+	
 
 	# arr =  [[0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
 	# 				[0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],
@@ -303,12 +311,22 @@ def main():
 				 
 			
 			  			 
-				 
-	mo = MorphologicalOperators(img, arr)
-	mo.boundary()
-	
-	if output_file:
-		mo.save(output_file)
+	img = cv2.imread(inputf, 0)
+	mo = MorphologicalOperators(img, se)
+
+	if morph_op == "erosion":
+		mo.erosion()
+	elif morph_op == "dilation":
+		mo.dilation()
+	elif morph_op == "opening":
+		mo.opening()
+	elif morph_op == "closing":
+		mo.closing()
+	elif morph_op == "boundary":
+		mo.boundary()				
+
+	if outputf:
+		mo.save(outputf)
 	else:
 		mo.plot()
 
