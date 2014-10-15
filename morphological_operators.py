@@ -62,7 +62,7 @@ class MorphologicalOperators:
 
 	def boundary(self):
 		self.erosion()
-		boundary = self.original_image.matrix - self.labeled_image.matrix
+		boundary = np.subtract(self.original_image.matrix, self.labeled_image.matrix)
 		self.labeled_image.matrix = deepcopy(boundary)
 								
 	def plot(self):
