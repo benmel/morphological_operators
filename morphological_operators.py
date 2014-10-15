@@ -8,16 +8,16 @@ from copy import deepcopy
 class MorphologicalOperators:
 	def __init__(self, img, arr):
 		"""Create threshold image"""
-		ret,thresh = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
 		self.background = 0
-		self.foreground = 255
+		self.foreground = 1
+		ret,thresh = cv2.threshold(img, 127, self.foreground, cv2.THRESH_BINARY)
 		self.original_image = LabeledImage(thresh, None, None, self.background)
 		self.labeled_image = LabeledImage(thresh, None, None, self.background)
 		self.rows,self.cols = self.labeled_image.shape()
-		self.new_image = LabeledImage(None, self.rows, self.cols, self.background)
 		self.se = StructuringElement(arr)
 	
 	def erosion(self):
+		new_image = LabeledImage(None, self.rows, self.cols, self.background)
 		for i in xrange(self.rows):
 			for j in xrange(self.cols):
 				current = self.labeled_image.get_pixel(i,j)
@@ -31,10 +31,11 @@ class MorphologicalOperators:
 							other_bg_px = True
 					if other_bg_px and len(neighbors) > 0:
 						new.label = self.background
-				self.new_image.label_pixel(new)		
-		self.labeled_image = deepcopy(self.new_image)		
+				new_image.label_pixel(new)		
+		self.labeled_image = deepcopy(new_image)		
 
 	def dilation(self):
+		new_image = LabeledImage(None, self.rows, self.cols, self.background)
 		for i in xrange(self.rows):
 			for j in xrange(self.cols):
 				current = self.labeled_image.get_pixel(i,j)
@@ -48,8 +49,8 @@ class MorphologicalOperators:
 							other_fg_px = True
 					if other_fg_px and len(neighbors) > 0:
 						new.label = self.foreground
-				self.new_image.label_pixel(new)
-		self.labeled_image = deepcopy(self.new_image)	
+				new_image.label_pixel(new)
+		self.labeled_image = deepcopy(new_image)	
 
 	def opening(self):
 		self.erosion()
@@ -61,7 +62,7 @@ class MorphologicalOperators:
 
 	def boundary(self):
 		self.erosion()
-		boundary = self.original_image.matrix - self.labeled_image.matrix
+		boundary = np.subtract(self.original_image.matrix, self.labeled_image.matrix)
 		self.labeled_image.matrix = deepcopy(boundary)
 								
 	def plot(self):
@@ -71,8 +72,8 @@ class MorphologicalOperators:
 		self.labeled_image.save(output_file)	
 
 	def save_text(self):
-		# np.savetxt('in.csv', self.labeled_image.matrix, delimiter=',', fmt='%d')
-		np.savetxt('out.csv', self.new_image.matrix, delimiter=',', fmt='%d')	
+		np.savetxt('in.csv', self.original_image.matrix, delimiter=',', fmt='%d')
+		np.savetxt('out.csv', self.labeled_image.matrix, delimiter=',', fmt='%d')	
 	
 
 class LabeledImage:
